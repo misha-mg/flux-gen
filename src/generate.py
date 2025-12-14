@@ -13,7 +13,7 @@ def main():
     pipe = FluxPipeline.from_pretrained(
         MODEL_ID,
         dtype=torch.float16,
-        device_map="auto",
+        device_map="cuda",   # 🔑 ВАЖЛИВО
     )
 
     pipe.enable_attention_slicing()
