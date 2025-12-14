@@ -6,20 +6,18 @@ MODEL_ID = "black-forest-labs/FLUX.1-schnell"
 
 def main():
     if not torch.cuda.is_available():
-        raise RuntimeError("CUDA GPU не знайдено")
+        raise RuntimeError("CUDA GPU not found")
 
     os.makedirs("outputs", exist_ok=True)
 
     pipe = FluxPipeline.from_pretrained(
         MODEL_ID,
-        dtype=torch.float16,
-        device_map="cuda",
-        low_cpu_mem_usage=True,   # 🔑 КЛЮЧОВЕ
+        device_map="balanced",          # 🔑 КРИТИЧНО
+        low_cpu_mem_usage=True,
     )
 
-    # Memory-safe режими
-    pipe.enable_attention_slicing()
-    pipe.enable_vae_slicing()
+    # 🔑 КРИТИЧНО: offload
+    pipe.enable_model_cpu_offload()
 
     prompt = (
         "cinematic portrait photo, soft natural light, "
@@ -28,8 +26,8 @@ def main():
 
     image = pipe(
         prompt=prompt,
-        height=1024,
-        width=1024,
+        height=768,                     # 🔑 ЗМЕНШЕНО
+        width=768,
         guidance_scale=3.5,
         num_inference_steps=20,
     ).images[0]
