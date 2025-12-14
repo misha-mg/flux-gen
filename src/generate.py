@@ -13,9 +13,11 @@ def main():
     pipe = FluxPipeline.from_pretrained(
         MODEL_ID,
         dtype=torch.float16,
-        device_map="cuda",   # 🔑 ВАЖЛИВО
+        device_map="cuda",
+        low_cpu_mem_usage=True,   # 🔑 КЛЮЧОВЕ
     )
 
+    # Memory-safe режими
     pipe.enable_attention_slicing()
     pipe.enable_vae_slicing()
 
