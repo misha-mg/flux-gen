@@ -2,7 +2,7 @@ import os
 import torch
 from diffusers import FluxPipeline
 
-MODEL_ID = "black-forest-labs/FLUX.1-dev"
+MODEL_ID = "black-forest-labs/FLUX.1-schnell"
 
 def main():
     if not torch.cuda.is_available():
@@ -16,7 +16,6 @@ def main():
         device_map="auto",
     )
 
-    # 🔑 КЛЮЧОВІ ОПТИМІЗАЦІЇ
     pipe.enable_attention_slicing()
     pipe.enable_vae_slicing()
 
@@ -29,12 +28,12 @@ def main():
         prompt=prompt,
         height=1024,
         width=1024,
-        guidance_scale=4.0,
-        num_inference_steps=28,
+        guidance_scale=3.5,
+        num_inference_steps=20,
     ).images[0]
 
-    image.save("outputs/flux_output.png")
-    print("Saved: outputs/flux_output.png")
+    image.save("outputs/flux_schnell.png")
+    print("Saved: outputs/flux_schnell.png")
 
 if __name__ == "__main__":
     main()
