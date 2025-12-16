@@ -13,8 +13,8 @@ def main(args):
         print(f"CUDA version: {torch.version.cuda}")
         print(f"PyTorch version: {torch.__version__}")
 
-        # Load to CPU first, then enable offload during inference for better VRAM management
-        device_map = "cpu"
+        # Use CUDA device mapping for direct GPU loading (FluxPipeline supports: balanced, cuda)
+        device_map = "cuda"
         torch_dtype = torch.float16
         use_cpu_offload = True
     else:
