@@ -25,6 +25,7 @@ def test_parse_args_defaults():
         assert config.lora_path is None
         assert config.lora_config_path is None
         assert config.lora_scale == 1.0
+        assert config.lora_trigger_word is None
     finally:
         sys.argv = original_argv
 
@@ -74,5 +75,24 @@ def test_parse_args_with_lora():
         assert config.lora_path == '/path/to/lora.safetensors'
         assert config.lora_config_path == '/path/to/lora_config.json'
         assert config.lora_scale == 0.8
+        assert config.lora_trigger_word is None
+    finally:
+        sys.argv = original_argv
+
+
+def test_parse_args_with_lora_trigger():
+    """Test that LoRA trigger word argument is parsed correctly."""
+    import sys
+    original_argv = sys.argv
+    try:
+        sys.argv = [
+            'generate.py',
+            '--lora_path', '/path/to/lora.safetensors',
+            '--lora_trigger_word', 'alina-face'
+        ]
+        config = parse_args()
+
+        assert config.lora_path == '/path/to/lora.safetensors'
+        assert config.lora_trigger_word == 'alina-face'
     finally:
         sys.argv = original_argv

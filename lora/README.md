@@ -7,6 +7,27 @@
 pip install peft>=0.7.0
 ```
 
+## Важная информация о trigger words
+
+Большинство LoRA моделей обучаются с **trigger word** (триггерным словом) - специальным идентификатором, который активирует стиль или персонажа LoRA.
+
+### Как узнать trigger word?
+- Обычно указано в описании модели
+- Для вашей "alina-face" LoRA триггерное слово - **alina-face**
+
+### Способы использования trigger word:
+
+#### 1. Ручное добавление в промпт:
+```bash
+--prompt "alina-face, beautiful portrait, detailed face"
+```
+
+#### 2. Автоматическое добавление:
+```bash
+--lora_trigger_word "alina-face" --prompt "beautiful portrait, detailed face"
+```
+В результате получится: `"alina-face, beautiful portrait, detailed face"`
+
 ## Структура файлов LoRA
 
 Для каждой LoRA модели обычно нужны два файла:

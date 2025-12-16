@@ -108,8 +108,7 @@ def test_apply_lora_to_pipeline_success():
 
     mock_pipeline = MagicMock()
 
-    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True), \
-         patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True):
         from flux_gen.pipeline import apply_lora_to_pipeline
         apply_lora_to_pipeline(mock_pipeline, gen_config)
 
@@ -140,8 +139,7 @@ def test_apply_lora_to_pipeline_with_config():
 
     mock_pipeline = MagicMock()
 
-    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True), \
-         patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True):
         from flux_gen.pipeline import apply_lora_to_pipeline
         apply_lora_to_pipeline(mock_pipeline, gen_config)
 

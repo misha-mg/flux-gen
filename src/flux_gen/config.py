@@ -17,11 +17,19 @@ class GenerationConfig:
     lora_path: str | None = None  # Path to LoRA weights file (.safetensors)
     lora_config_path: str | None = None  # Path to LoRA config file (.json)
     lora_scale: float = 1.0  # Scale factor for LoRA weights
+    lora_trigger_word: str | None = None  # Trigger word for LoRA (auto-added to prompt)
 
     @property
     def output_path(self) -> Path:
         """Get the full path where the generated image will be saved."""
         return self.out_dir / "flux_schnell.png"
+
+    @property
+    def effective_prompt(self) -> str:
+        """Get the effective prompt with LoRA trigger word if specified."""
+        if self.lora_trigger_word and self.lora_path:
+            return f"{self.lora_trigger_word}, {self.prompt}"
+        return self.prompt
 
 
 @dataclass

@@ -42,15 +42,31 @@ python src/generate.py --prompt "ваш промпт здесь"
 pip install peft>=0.7.0
 ```
 
-Для использования собственной LoRA модели:
+#### Способ 1: Ручное добавление trigger word в промпт
+
+Если ваша LoRA обучена с trigger word (например, "alina-face"), добавьте его в начало промпта:
 
 ```bash
 python src/generate.py \
-  --prompt "ваш промпт здесь" \
+  --prompt "alina-face, ваш промпт здесь, portrait photo, beautiful woman" \
   --lora_path "path/to/KMvFWS9iTsDBW7gksxGlK_pytorch_lora_weights.safetensors" \
   --lora_config_path "path/to/rfNiXmg5PsAsGzH4OaKIi_config.json" \
   --lora_scale 1.0
 ```
+
+#### Способ 2: Автоматическое добавление trigger word
+
+Используйте параметр `--lora_trigger_word` для автоматического добавления:
+
+```bash
+python src/generate.py \
+  --prompt "portrait photo, beautiful woman, detailed face" \
+  --lora_path "path/to/KMvFWS9iTsDBW7gksxGlK_pytorch_lora_weights.safetensors" \
+  --lora_trigger_word "alina-face" \
+  --lora_scale 1.0
+```
+
+В этом случае эффективный промпт будет: `"alina-face, portrait photo, beautiful woman, detailed face"`
 
 Параметры LoRA:
 - `--lora_path`: путь к файлу весов LoRA (.safetensors)

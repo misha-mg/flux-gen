@@ -6,16 +6,16 @@
 LORA_WEIGHTS="lora/KMvFWS9iTsDBW7gksxGlK_pytorch_lora_weights.safetensors"
 LORA_CONFIG="lora/rfNiXmg5PsAsGzH4OaKIi_config.json"
 
-# Базовый пример с LoRA
+# Базовый пример с LoRA (ВАЖНО: используйте trigger word "alina-face"!)
 python src/generate.py \
-  --prompt "portrait photo, beautiful woman, detailed face, professional lighting" \
+  --prompt "alina-face, portrait photo, beautiful woman, detailed face, professional lighting" \
   --lora_path "$LORA_WEIGHTS" \
   --lora_config_path "$LORA_CONFIG" \
   --lora_scale 1.0
 
 # Пример с кастомным масштабом LoRA
 python src/generate.py \
-  --prompt "artistic portrait, elegant pose, studio lighting" \
+  --prompt "alina-face, artistic portrait, elegant pose, studio lighting" \
   --lora_path "$LORA_WEIGHTS" \
   --lora_scale 0.8 \
   --height 1024 \
@@ -24,6 +24,16 @@ python src/generate.py \
 
 # Пример без config файла (если он не нужен)
 python src/generate.py \
-  --prompt "cinematic scene, dramatic lighting" \
+  --prompt "alina-face, cinematic scene, dramatic lighting" \
   --lora_path "$LORA_WEIGHTS" \
   --lora_scale 1.2
+
+# НОВЫЙ СПОСОБ: автоматическое добавление trigger word
+python src/generate.py \
+  --prompt "cinematic scene, dramatic lighting, professional photo" \
+  --lora_path "$LORA_WEIGHTS" \
+  --lora_trigger_word "alina-face" \
+  --lora_scale 1.2
+
+echo "Примечание: trigger word 'alina-face' будет автоматически добавлен в начало промпта"
+

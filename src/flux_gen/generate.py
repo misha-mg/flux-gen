@@ -21,9 +21,13 @@ def run_generation(gen_config: config.GenerationConfig):
     # Load pipeline
     pipe = pipeline.load_flux_pipeline(gen_config, runtime_config)
 
-    # Run inference
+    # Run inference (use effective_prompt which includes LoRA trigger word if specified)
+    effective_prompt = gen_config.effective_prompt
+    if effective_prompt != gen_config.prompt:
+        print(f"Using effective prompt with LoRA trigger: '{effective_prompt}'")
+
     image = pipe(
-        prompt=gen_config.prompt,
+        prompt=effective_prompt,
         height=gen_config.height,
         width=gen_config.width,
         guidance_scale=gen_config.guidance_scale,

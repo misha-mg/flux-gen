@@ -73,6 +73,12 @@ def parse_args():
         default=1.0,
         help="Scale factor for LoRA weights (default: 1.0)"
     )
+    parser.add_argument(
+        "--lora_trigger_word",
+        type=str,
+        default=None,
+        help="Trigger word for LoRA (automatically added to prompt start)"
+    )
 
     args = parser.parse_args()
 
@@ -96,4 +102,5 @@ def parse_args():
         lora_path=args.lora_path,
         lora_config_path=args.lora_config_path,
         lora_scale=args.lora_scale,
+        lora_trigger_word=args.lora_trigger_word,
     )
