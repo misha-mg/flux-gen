@@ -13,8 +13,8 @@ def main(args):
         print(f"CUDA version: {torch.version.cuda}")
         print(f"PyTorch version: {torch.__version__}")
 
-        # Use auto device mapping for better memory management on RTX 3090
-        device_map = "auto"
+        # Load to CPU first, then enable offload during inference for better VRAM management
+        device_map = "cpu"
         torch_dtype = torch.float16
         use_cpu_offload = True
     else:
