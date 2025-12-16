@@ -2,6 +2,22 @@
 
 This guide explains how to run the FLUX image generation script on Runpod using an RTX 3090 GPU.
 
+## Model Configuration
+
+The project now uses `FLUX.1 [dev]` by default, but you can override this via environment variables.
+
+### Setting Model ID
+
+To use a different model, set the `MODEL_ID` environment variable:
+
+```bash
+export MODEL_ID="black-forest-labs/FLUX.1-dev"  # Default
+# or
+export MODEL_ID="black-forest-labs/FLUX.1-schnell"  # For faster generation
+```
+
+**Note**: The script will automatically use the model specified in `MODEL_ID` environment variable, defaulting to `FLUX.1-dev`.
+
 ## Recommended Runpod Configuration
 
 - **GPU**: RTX 3090 (24GB VRAM) - sufficient for 768×768 generation with fp16
@@ -58,7 +74,7 @@ Full command with all options (showing defaults):
 
 ```bash
 python src/generate.py \
-  --model_id "black-forest-labs/FLUX.1-schnell" \
+  --model_id "black-forest-labs/FLUX.1-dev" \
   --prompt "cinematic portrait photo, soft natural light, 85mm lens, shallow depth of field, ultra realistic" \
   --out_dir "src/outputs" \
   --height 768 \
@@ -66,6 +82,8 @@ python src/generate.py \
   --guidance_scale 3.5 \
   --num_inference_steps 20
 ```
+
+**Note**: The `--model_id` parameter will override the `MODEL_ID` environment variable if both are set.
 
 ### Using LoRA (Low-Rank Adaptation)
 
@@ -132,7 +150,7 @@ python src/generate.py \
   --out_dir "./test_output"
 
 # Check if image was created
-ls -la ./test_output/flux_schnell.png
+ls -la ./test_output/flux_dev.png
 ```
 
 ## Expected Output
@@ -141,8 +159,49 @@ The script will:
 1. Detect and display GPU information
 2. Load the FLUX model (may take 1-2 minutes)
 3. Generate the image (20-60 seconds depending on settings)
-4. Save to `flux_schnell.png` in the output directory
+4. Save to `flux_dev.png` in the output directory (filename based on model)
 5. Display the save path
+
+## Memory Management & Model Unloading
+
+### Unloading Models to Free GPU Memory
+
+When switching between models or to free up GPU memory, use the provided unload script:
+
+```bash
+# Unload model and clear GPU cache
+python scripts/unload_model.py --verbose
+
+# Force unload (useful if script can't detect loaded models)
+python scripts/unload_model.py --force --verbose
+```
+
+**What this does:**
+- Deletes model objects from memory
+- Runs garbage collection
+- Clears CUDA cache (`torch.cuda.empty_cache()`)
+- Shows memory usage before/after (with `--verbose`)
+
+### Runpod Instance Management
+
+**To completely free GPU memory:**
+1. **Stop/Terminate the Runpod instance** via Runpod Dashboard - this guarantees all GPU memory is freed
+2. **Restart the instance** with new environment variables if needed
+
+**Programmatic instance management:**
+- Use Runpod API or CLI tools to terminate/stop instances
+- Example: `runpodctl terminate <instance-id>` (if available)
+
+### Memory Monitoring
+
+Check GPU memory usage:
+```bash
+# NVIDIA GPU memory usage
+nvidia-smi --query-gpu=memory.used,memory.total --format=csv
+
+# PyTorch memory info
+python -c "import torch; print(f'Allocated: {torch.cuda.memory_allocated()/1024**3:.2f}GB, Reserved: {torch.cuda.memory_reserved()/1024**3:.2f}GB')"
+```
 
 ## Performance Tips
 
@@ -162,6 +221,8 @@ The script will:
 7. **Attention/GQA errors**: The script sets `DIFFUSERS_FORCE_ATTENTION_BACKEND=math` for compatibility - if issues persist, try updating PyTorch to 2.5+
 8. **Deprecation warnings**: The script uses compatible parameters - warnings can be ignored as they don't affect functionality
 9. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
+10. **Model switching**: Use `MODEL_ID` environment variable to switch models without code changes
+11. **Memory not freed**: Use `python scripts/unload_model.py` or restart instance to free GPU memory
 
 ## Cost Estimation
 

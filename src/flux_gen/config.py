@@ -1,7 +1,12 @@
 """Configuration dataclasses for FLUX image generation."""
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
+
+
+# Default model ID - can be overridden by MODEL_ID environment variable
+MODEL_ID = os.getenv("MODEL_ID", "black-forest-labs/FLUX.1-dev")
 
 
 @dataclass
@@ -22,7 +27,9 @@ class GenerationConfig:
     @property
     def output_path(self) -> Path:
         """Get the full path where the generated image will be saved."""
-        return self.out_dir / "flux_schnell.png"
+        # Generate filename based on model ID (e.g., "flux_dev.png" for FLUX.1-dev)
+        model_name = self.model_id.split('/')[-1].lower().replace('.', '_').replace('-', '_')
+        return self.out_dir / f"{model_name}.png"
 
     @property
     def effective_prompt(self) -> str:

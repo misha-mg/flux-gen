@@ -4,10 +4,7 @@ import argparse
 import os
 from pathlib import Path
 
-from .config import GenerationConfig
-
-
-MODEL_ID = "black-forest-labs/FLUX.1-schnell"
+from .config import GenerationConfig, MODEL_ID
 
 
 def parse_args():
