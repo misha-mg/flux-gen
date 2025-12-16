@@ -108,7 +108,8 @@ def test_apply_lora_to_pipeline_success():
 
     mock_pipeline = MagicMock()
 
-    with patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True), \
+         patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
         from flux_gen.pipeline import apply_lora_to_pipeline
         apply_lora_to_pipeline(mock_pipeline, gen_config)
 
@@ -139,7 +140,8 @@ def test_apply_lora_to_pipeline_with_config():
 
     mock_pipeline = MagicMock()
 
-    with patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True), \
+         patch('flux_gen.pipeline.apply_lora_to_pipeline') as mock_apply_lora:
         from flux_gen.pipeline import apply_lora_to_pipeline
         apply_lora_to_pipeline(mock_pipeline, gen_config)
 
@@ -152,6 +154,31 @@ def test_apply_lora_to_pipeline_with_config():
             adapter_names=["custom_lora"],
             lora_scale=1.0
         )
+
+
+def test_apply_lora_to_pipeline_peft_not_available():
+    """Test LoRA application when PEFT is not available."""
+    gen_config = GenerationConfig(
+        model_id="test/model",
+        prompt="test",
+        height=512,
+        width=512,
+        guidance_scale=2.0,
+        num_inference_steps=10,
+        out_dir=None,
+        lora_path="/path/to/lora.safetensors"
+    )
+
+    mock_pipeline = MagicMock()
+
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', False):
+        from flux_gen.pipeline import apply_lora_to_pipeline
+
+        with pytest.raises(RuntimeError) as exc_info:
+            apply_lora_to_pipeline(mock_pipeline, gen_config)
+
+        error_msg = str(exc_info.value)
+        assert "PEFT library is required" in error_msg
 
 
 def test_apply_lora_to_pipeline_failure():
@@ -170,11 +197,12 @@ def test_apply_lora_to_pipeline_failure():
     mock_pipeline = MagicMock()
     mock_pipeline.load_lora_weights.side_effect = Exception("LoRA load failed")
 
-    from flux_gen.pipeline import apply_lora_to_pipeline
+    with patch('flux_gen.pipeline.PEFT_AVAILABLE', True):
+        from flux_gen.pipeline import apply_lora_to_pipeline
 
-    with pytest.raises(RuntimeError) as exc_info:
-        apply_lora_to_pipeline(mock_pipeline, gen_config)
+        with pytest.raises(RuntimeError) as exc_info:
+            apply_lora_to_pipeline(mock_pipeline, gen_config)
 
-    error_msg = str(exc_info.value)
-    assert "Failed to apply LoRA" in error_msg
-    assert "LoRA load failed" in error_msg
+        error_msg = str(exc_info.value)
+        assert "Failed to apply LoRA" in error_msg
+        assert "LoRA load failed" in error_msg

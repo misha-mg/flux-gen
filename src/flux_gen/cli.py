@@ -76,6 +76,15 @@ def parse_args():
 
     args = parser.parse_args()
 
+    # Check PEFT availability if LoRA is requested
+    if args.lora_path:
+        try:
+            import peft
+        except ImportError:
+            print("Warning: PEFT library is required for LoRA support but not installed.")
+            print("Install it with: pip install peft>=0.7.0")
+            print("Continuing without LoRA...")
+
     return GenerationConfig(
         model_id=args.model_id,
         prompt=args.prompt,

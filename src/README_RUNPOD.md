@@ -69,6 +69,11 @@ python src/generate.py \
 
 ### Using LoRA (Low-Rank Adaptation)
 
+**Prerequisites:** Install PEFT library for LoRA support:
+```bash
+pip install peft>=0.7.0
+```
+
 To use custom LoRA weights with FLUX:
 
 ```bash
@@ -83,6 +88,8 @@ LoRA parameters:
 - `--lora_path`: Path to LoRA weights file (.safetensors format)
 - `--lora_config_path`: Path to LoRA configuration file (.json format), optional
 - `--lora_scale`: Scale factor for LoRA application (default: 1.0, recommended: 0.5-1.5)
+
+**Note:** If PEFT is not installed, the script will show a warning and continue without LoRA.
 
 To use a different output directory:
 

@@ -20,3 +20,6 @@ numpy>=1.24.0
 requests>=2.31.0
 protobuf>=3.20.0  # Required for sentencepiece tokenizers used by FLUX
 sentencepiece>=0.1.99  # Required for T5 tokenizers used in FLUX
+
+# PEFT for LoRA support (required for LoRA functionality)
+peft>=0.7.0

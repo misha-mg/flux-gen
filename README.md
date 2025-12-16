@@ -22,6 +22,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+**Для LoRA підтримки (опціонально):**
+```bash
+pip install peft>=0.7.0
+```
+
 3. Запустите генерацию
 
 ```bash
@@ -31,6 +36,11 @@ python src/generate.py --prompt "ваш промпт здесь"
 По умолчанию изображения сохраняются в `src/outputs/flux_schnell.png`.
 
 ### Использование с LoRA
+
+**Важно:** Для использования LoRA требуется установить PEFT библиотеку:
+```bash
+pip install peft>=0.7.0
+```
 
 Для использования собственной LoRA модели:
 

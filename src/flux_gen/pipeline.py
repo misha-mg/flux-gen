@@ -1,5 +1,12 @@
 """FLUX pipeline loading and management."""
 
+# Import PEFT for LoRA support
+try:
+    import peft
+    PEFT_AVAILABLE = True
+except ImportError:
+    PEFT_AVAILABLE = False
+
 
 def load_flux_pipeline(gen_config, runtime_config):
     """Load and return FLUX pipeline with error handling."""
@@ -29,17 +36,30 @@ def load_flux_pipeline(gen_config, runtime_config):
 
     # Load and apply LoRA if specified
     if gen_config.lora_path:
-        apply_lora_to_pipeline(pipe, gen_config)
+        try:
+            apply_lora_to_pipeline(pipe, gen_config)
+        except RuntimeError as e:
+            if "PEFT library is required" in str(e):
+                print(f"Warning: {e}")
+                print("Continuing without LoRA...")
+            else:
+                raise
 
     return pipe
 
 
 def apply_lora_to_pipeline(pipe, gen_config):
     """Apply LoRA weights to the FLUX pipeline."""
+    if not PEFT_AVAILABLE:
+        raise RuntimeError(
+            "PEFT library is required for LoRA support. Please install it with:\n"
+            "pip install peft>=0.7.0"
+        )
+
     try:
         # Load LoRA weights
         if gen_config.lora_config_path:
-            # If config file is provided, use it
+            # If config file is provided, use it for more control
             pipe.load_lora_weights(
                 gen_config.lora_path,
                 weight_name=None,  # Will be inferred from safetensors file
@@ -55,7 +75,8 @@ def apply_lora_to_pipeline(pipe, gen_config):
         print(f"LoRA applied successfully: {gen_config.lora_path} (scale: {gen_config.lora_scale})")
 
     except Exception as e:
-        raise RuntimeError(
-            f"Failed to apply LoRA from '{gen_config.lora_path}': {e}\n"
-            "Make sure the LoRA file is valid and compatible with FLUX model."
-        )
+        error_msg = f"Failed to apply LoRA from '{gen_config.lora_path}': {e}\n"
+        if "PEFT backend is required" in str(e):
+            error_msg += "Make sure PEFT library is installed: pip install peft>=0.7.0\n"
+        error_msg += "Make sure the LoRA file is valid and compatible with FLUX model."
+        raise RuntimeError(error_msg)

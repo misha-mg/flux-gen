@@ -1,5 +1,6 @@
 #!/bin/bash
 # Пример использования LoRA с вашими файлами
+# Важно: установите PEFT для поддержки LoRA: pip install peft>=0.7.0
 
 # Предполагая, что файлы LoRA находятся в директории lora/
 LORA_WEIGHTS="lora/KMvFWS9iTsDBW7gksxGlK_pytorch_lora_weights.safetensors"
