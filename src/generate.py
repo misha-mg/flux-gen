@@ -42,10 +42,10 @@ def main(args):
     try:
         pipe = FluxPipeline.from_pretrained(
             args.model_id,
-            torch_dtype=torch_dtype,
+            dtype=torch_dtype,
             device_map=device_map,
             low_cpu_mem_usage=True,
-            use_auth_token=hf_token,
+            token=hf_token,
         )
     except Exception as e:
         if "401" in str(e) or "authorization" in str(e).lower():

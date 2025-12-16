@@ -20,6 +20,12 @@ First, install the dependencies:
 pip install -r requirements.txt
 ```
 
+**Important**: The protobuf library is required for FLUX tokenizers. If you encounter protobuf-related errors, install it with:
+
+```bash
+pip install protobuf
+```
+
 **Important**: Make sure the PyTorch wheel matches your Runpod instance's CUDA version. Check with:
 
 ```bash
@@ -33,6 +39,8 @@ If using a private model, set your Hugging Face token:
 ```bash
 export HF_TOKEN=your_huggingface_token_here
 ```
+
+The script automatically detects and uses the HF_TOKEN environment variable.
 
 Get your token from: https://huggingface.co/settings/tokens
 
@@ -111,7 +119,8 @@ The script will:
 2. **"401 Unauthorized"**: Set `HF_TOKEN` for private models
 3. **Device mapping errors**: The script uses `device_map="cuda"` which loads the model directly to GPU. FluxPipeline supports only "balanced" and "cuda" device maps. If you encounter issues, try updating `diffusers` and `accelerate` to the latest versions
 4. **OOM Error**: Reduce image size (`--height 512 --width 512`) or decrease inference steps (`--num_inference_steps 15`)
-5. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
+5. **Protobuf/tokenizer errors**: Install protobuf with `pip install protobuf` - required for FLUX sentencepiece tokenizers
+6. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
 
 ## Cost Estimation
 

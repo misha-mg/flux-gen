@@ -17,3 +17,4 @@ torchvision>=0.16.0
 # Additional dependencies that may be needed
 numpy>=1.24.0
 requests>=2.31.0
+protobuf>=3.20.0  # Required for sentencepiece tokenizers used by FLUX
