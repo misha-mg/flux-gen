@@ -54,17 +54,23 @@ Basic usage:
 python src/generate.py --prompt "your prompt here"
 ```
 
-Full command with all options:
+Full command with all options (showing defaults):
 
 ```bash
 python src/generate.py \
   --model_id "black-forest-labs/FLUX.1-schnell" \
   --prompt "cinematic portrait photo, soft natural light, 85mm lens, shallow depth of field, ultra realistic" \
-  --out_dir "./outputs" \
+  --out_dir "src/outputs" \
   --height 768 \
   --width 768 \
   --guidance_scale 3.5 \
   --num_inference_steps 20
+```
+
+To use a different output directory:
+
+```bash
+python src/generate.py --prompt "your prompt" --out_dir "./my_outputs"
 ```
 
 ## Memory Usage Notes
