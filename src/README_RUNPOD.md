@@ -54,17 +54,52 @@ Basic usage:
 python src/generate.py --prompt "your prompt here"
 ```
 
-Full command with all options:
+Full command with all options (showing defaults):
 
 ```bash
 python src/generate.py \
   --model_id "black-forest-labs/FLUX.1-schnell" \
   --prompt "cinematic portrait photo, soft natural light, 85mm lens, shallow depth of field, ultra realistic" \
-  --out_dir "./outputs" \
+  --out_dir "src/outputs" \
   --height 768 \
   --width 768 \
   --guidance_scale 3.5 \
   --num_inference_steps 20
+```
+
+### Using LoRA (Low-Rank Adaptation)
+
+**Prerequisites:** Install PEFT library for LoRA support:
+```bash
+pip install peft>=0.7.0
+```
+
+To use custom LoRA weights with FLUX:
+
+```bash
+python src/generate.py \
+  --prompt "your prompt here" \
+  --lora_path "path/to/your_lora_weights.safetensors" \
+  --lora_config_path "path/to/your_lora_config.json" \
+  --lora_scale 1.0
+```
+
+LoRA parameters:
+- `--lora_path`: Path to LoRA weights file (.safetensors format)
+- `--lora_config_path`: Path to LoRA configuration file (.json format), optional
+- `--lora_scale`: Scale factor for LoRA application (default: 1.0, recommended: 0.5-1.5)
+- `--lora_trigger_word`: Trigger word for LoRA (automatically added to prompt start), optional
+
+**Important:** If your LoRA was trained with a trigger word (like "character-name"), you MUST include it in the prompt for the LoRA to work properly. Use either:
+- Manual: `--prompt "trigger-word, your prompt here"`
+- Automatic: `--lora_trigger_word "trigger-word" --prompt "your prompt here"`
+
+**Note:** If PEFT is not installed, the script will show a warning and continue without LoRA.
+
+To use a different output directory:
+
+```bash
+python src/generate.py --prompt "your prompt" --out_dir "./my_outputs"
 ```
 
 ## Memory Usage Notes
