@@ -21,6 +21,26 @@ def test_generation_config_output_path():
     assert config.output_path == Path("/tmp/test_outputs/flux_schnell.png")
 
 
+def test_generation_config_with_lora():
+    """Test GenerationConfig with LoRA parameters."""
+    config = GenerationConfig(
+        model_id="test/model",
+        prompt="test prompt",
+        height=512,
+        width=512,
+        guidance_scale=2.0,
+        num_inference_steps=10,
+        out_dir=Path("/tmp/test_outputs"),
+        lora_path="/path/to/lora.safetensors",
+        lora_config_path="/path/to/lora_config.json",
+        lora_scale=0.8
+    )
+
+    assert config.lora_path == "/path/to/lora.safetensors"
+    assert config.lora_config_path == "/path/to/lora_config.json"
+    assert config.lora_scale == 0.8
+
+
 def test_runtime_config_from_env():
     """Test RuntimeConfig creation from environment."""
     with patch.dict('os.environ', {'HF_TOKEN': 'test_token'}, clear=True):

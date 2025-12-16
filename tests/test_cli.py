@@ -22,6 +22,9 @@ def test_parse_args_defaults():
         assert config.guidance_scale == 3.5
         assert config.num_inference_steps == 20
         assert config.output_path == Path("src/outputs/flux_schnell.png")
+        assert config.lora_path is None
+        assert config.lora_config_path is None
+        assert config.lora_scale == 1.0
     finally:
         sys.argv = original_argv
 
@@ -51,5 +54,25 @@ def test_parse_args_custom_values():
         assert config.guidance_scale == 2.0
         assert config.num_inference_steps == 10
         assert config.output_path == Path('./custom_outputs/flux_schnell.png')
+    finally:
+        sys.argv = original_argv
+
+
+def test_parse_args_with_lora():
+    """Test that LoRA arguments are parsed correctly."""
+    import sys
+    original_argv = sys.argv
+    try:
+        sys.argv = [
+            'generate.py',
+            '--lora_path', '/path/to/lora.safetensors',
+            '--lora_config_path', '/path/to/lora_config.json',
+            '--lora_scale', '0.8'
+        ]
+        config = parse_args()
+
+        assert config.lora_path == '/path/to/lora.safetensors'
+        assert config.lora_config_path == '/path/to/lora_config.json'
+        assert config.lora_scale == 0.8
     finally:
         sys.argv = original_argv

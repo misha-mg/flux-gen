@@ -67,6 +67,23 @@ python src/generate.py \
   --num_inference_steps 20
 ```
 
+### Using LoRA (Low-Rank Adaptation)
+
+To use custom LoRA weights with FLUX:
+
+```bash
+python src/generate.py \
+  --prompt "your prompt here" \
+  --lora_path "path/to/your_lora_weights.safetensors" \
+  --lora_config_path "path/to/your_lora_config.json" \
+  --lora_scale 1.0
+```
+
+LoRA parameters:
+- `--lora_path`: Path to LoRA weights file (.safetensors format)
+- `--lora_config_path`: Path to LoRA configuration file (.json format), optional
+- `--lora_scale`: Scale factor for LoRA application (default: 1.0, recommended: 0.5-1.5)
+
 To use a different output directory:
 
 ```bash

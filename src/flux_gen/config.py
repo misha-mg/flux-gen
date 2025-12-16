@@ -14,6 +14,9 @@ class GenerationConfig:
     guidance_scale: float
     num_inference_steps: int
     out_dir: Path
+    lora_path: str | None = None  # Path to LoRA weights file (.safetensors)
+    lora_config_path: str | None = None  # Path to LoRA config file (.json)
+    lora_scale: float = 1.0  # Scale factor for LoRA weights
 
     @property
     def output_path(self) -> Path:

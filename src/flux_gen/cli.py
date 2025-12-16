@@ -55,6 +55,24 @@ def parse_args():
         default=20,
         help="Number of inference steps (default: 20)"
     )
+    parser.add_argument(
+        "--lora_path",
+        type=str,
+        default=None,
+        help="Path to LoRA weights file (.safetensors)"
+    )
+    parser.add_argument(
+        "--lora_config_path",
+        type=str,
+        default=None,
+        help="Path to LoRA config file (.json)"
+    )
+    parser.add_argument(
+        "--lora_scale",
+        type=float,
+        default=1.0,
+        help="Scale factor for LoRA weights (default: 1.0)"
+    )
 
     args = parser.parse_args()
 
@@ -66,4 +84,7 @@ def parse_args():
         guidance_scale=args.guidance_scale,
         num_inference_steps=args.num_inference_steps,
         out_dir=Path(args.out_dir),
+        lora_path=args.lora_path,
+        lora_config_path=args.lora_config_path,
+        lora_scale=args.lora_scale,
     )
