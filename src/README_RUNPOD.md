@@ -20,11 +20,13 @@ First, install the dependencies:
 pip install -r requirements.txt
 ```
 
-**Important**: The protobuf library is required for FLUX tokenizers. If you encounter protobuf-related errors, install it with:
+**Important**: FLUX requires additional tokenization libraries. If you encounter tokenizer errors, install them with:
 
 ```bash
-pip install protobuf
+pip install protobuf sentencepiece
 ```
+
+The script automatically handles dtype parameters and sets attention backend for compatibility.
 
 **Important**: Make sure the PyTorch wheel matches your Runpod instance's CUDA version. Check with:
 
@@ -121,8 +123,10 @@ The script will:
 3. **Device mapping errors**: The script uses `device_map="cuda"` which loads the model directly to GPU. FluxPipeline supports only "balanced" and "cuda" device maps. If you encounter issues, try updating `diffusers` and `accelerate` to the latest versions
 4. **OOM Error**: Reduce image size (`--height 512 --width 512`) or decrease inference steps (`--num_inference_steps 15`)
 5. **CUDA OOM during loading**: Try `export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` or restart the instance
-6. **Protobuf/tokenizer errors**: Install protobuf with `pip install protobuf` - required for FLUX sentencepiece tokenizers
-7. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
+6. **Protobuf/tokenizer errors**: Install `pip install protobuf sentencepiece` - required for FLUX tokenizers
+7. **Attention/GQA errors**: The script sets `DIFFUSERS_FORCE_ATTENTION_BACKEND=math` for compatibility - if issues persist, try updating PyTorch to 2.5+
+8. **Deprecation warnings**: The script uses compatible parameters - warnings can be ignored as they don't affect functionality
+9. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
 
 ## Cost Estimation
 

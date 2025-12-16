@@ -6,6 +6,11 @@ from diffusers import FluxPipeline
 MODEL_ID = "black-forest-labs/FLUX.1-schnell"
 
 def main(args):
+    # Set environment variables for FLUX compatibility
+    import os
+    os.environ['DIFFUSERS_FORCE_ATTENTION_BACKEND'] = 'math'
+    os.environ.setdefault('TORCH_USE_CUDA_DSA', '1')
+
     # Device detection and setup
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -41,9 +46,9 @@ def main(args):
 
     try:
         # For FLUX models, use CPU offload without device_map for better memory management
+        # Let the pipeline use default dtype to avoid deprecation warnings
         pipe = FluxPipeline.from_pretrained(
             args.model_id,
-            torch_dtype=torch_dtype,
             low_cpu_mem_usage=True,
             token=hf_token,
         )
