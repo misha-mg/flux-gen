@@ -40,10 +40,10 @@ def main(args):
     # NOTE: Diffusers expects torch_dtype (NOT dtype).
 
     try:
+        # For FLUX models, use CPU offload without device_map for better memory management
         pipe = FluxPipeline.from_pretrained(
             args.model_id,
-            dtype=torch_dtype,
-            device_map=device_map,
+            torch_dtype=torch_dtype,
             low_cpu_mem_usage=True,
             token=hf_token,
         )
@@ -58,9 +58,8 @@ def main(args):
         else:
             raise
 
-    # Enable CPU offload for memory efficiency on RTX 3090
-    if use_cpu_offload:
-        pipe.enable_model_cpu_offload()
+    # Enable CPU offload for memory efficiency - this is crucial for large models like FLUX
+    pipe.enable_model_cpu_offload()
 
     image = pipe(
         prompt=args.prompt,

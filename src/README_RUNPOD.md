@@ -68,10 +68,11 @@ python src/generate.py \
 ## Memory Usage Notes
 
 - **RTX 3090/A6000**: Good for 768×768 images with fp16 precision
-- The script uses `device_map="cuda"` for direct GPU loading and `enable_model_cpu_offload()` for additional VRAM management during inference
-- Peak memory usage during model loading uses GPU VRAM (~12-15GB)
-- Inference typically uses 8-12GB VRAM for 768×768 generation
+- The script uses CPU loading with `enable_model_cpu_offload()` for efficient VRAM management
+- Model loads to CPU first (~34GB total), then components move to GPU during inference as needed
+- Peak GPU memory usage during inference: ~8-12GB for 768×768 generation
 - **RTX A6000 (48GB)**: Can handle larger images (1024×1024) or higher quality settings
+- **Memory saving tip**: If you get OOM, try `export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
 
 ### Troubleshooting Memory Issues
 
@@ -119,8 +120,9 @@ The script will:
 2. **"401 Unauthorized"**: Set `HF_TOKEN` for private models
 3. **Device mapping errors**: The script uses `device_map="cuda"` which loads the model directly to GPU. FluxPipeline supports only "balanced" and "cuda" device maps. If you encounter issues, try updating `diffusers` and `accelerate` to the latest versions
 4. **OOM Error**: Reduce image size (`--height 512 --width 512`) or decrease inference steps (`--num_inference_steps 15`)
-5. **Protobuf/tokenizer errors**: Install protobuf with `pip install protobuf` - required for FLUX sentencepiece tokenizers
-6. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
+5. **CUDA OOM during loading**: Try `export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` or restart the instance
+6. **Protobuf/tokenizer errors**: Install protobuf with `pip install protobuf` - required for FLUX sentencepiece tokenizers
+7. **Slow loading**: First run downloads model (~10GB), subsequent runs are faster
 
 ## Cost Estimation
 
