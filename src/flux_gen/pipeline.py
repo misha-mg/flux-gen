@@ -1,6 +1,18 @@
-"""FLUX pipeline loading and management."""
+"""
+FLUX pipeline loading and management (optimized for RTX A6000 / A100).
 
-# Import PEFT for LoRA support
+Key principles:
+- Explicit dtype (bf16 / fp16) to avoid FP32 OOM
+- Full GPU placement for 48GB+ VRAM
+- No CPU offload unless explicitly required
+- Safe LoRA loading & fusion
+"""
+
+from __future__ import annotations
+
+import torch
+
+# Optional PEFT support for LoRA
 try:
     import peft
     PEFT_AVAILABLE = True
@@ -9,74 +21,88 @@ except ImportError:
 
 
 def load_flux_pipeline(gen_config, runtime_config):
-    """Load and return FLUX pipeline with error handling."""
+    """
+    Load FLUX pipeline optimized for large VRAM GPUs (RTX A6000, A100).
+
+    Strategy:
+    - bf16 on GPU
+    - no CPU offload
+    - safe LoRA fusion
+    """
+
     from diffusers import FluxPipeline
 
+    if not runtime_config.has_cuda:
+        raise RuntimeError("CUDA is required to run FLUX models.")
+
     try:
-        # For FLUX models, use CPU offload without device_map for better memory management
-        # Let the pipeline use default dtype to avoid deprecation warnings
         pipe = FluxPipeline.from_pretrained(
             gen_config.model_id,
-            low_cpu_mem_usage=True,
+            torch_dtype=torch.bfloat16,      # CRITICAL: avoid FP32
+            device_map="cuda",               # keep full model on GPU
             token=runtime_config.hf_token,
         )
     except Exception as e:
         if "401" in str(e) or "authorization" in str(e).lower():
             raise RuntimeError(
-                f"Failed to load model '{gen_config.model_id}'. "
-                "This might be a private model. Please set HF_TOKEN environment variable:\n"
-                "export HF_TOKEN=your_huggingface_token_here\n"
+                f"Failed to load model '{gen_config.model_id}'.\n"
+                "The model may be private.\n"
+                "Please set HuggingFace token:\n\n"
+                "  export HF_TOKEN=your_huggingface_token\n\n"
                 f"Original error: {e}"
             )
-        else:
-            raise
+        raise
 
-    # Enable CPU offload for memory efficiency - this is crucial for large models like FLUX
-    pipe.enable_model_cpu_offload()
+    # Enable memory-efficient attention if available
+    try:
+        pipe.enable_xformers_memory_efficient_attention()
+        print("xFormers memory-efficient attention enabled")
+    except Exception:
+        print("xFormers not available — using default attention")
 
-    # Load and apply LoRA if specified
+    # Apply LoRA if provided
     if gen_config.lora_path:
-        try:
-            apply_lora_to_pipeline(pipe, gen_config)
-        except RuntimeError as e:
-            if "PEFT library is required" in str(e):
-                print(f"Warning: {e}")
-                print("Continuing without LoRA...")
-            else:
-                raise
+        apply_lora_to_pipeline(pipe, gen_config)
 
     return pipe
 
 
 def apply_lora_to_pipeline(pipe, gen_config):
-    """Apply LoRA weights to the FLUX pipeline."""
+    """
+    Load and fuse LoRA weights into FLUX pipeline.
+    """
+
     if not PEFT_AVAILABLE:
         raise RuntimeError(
-            "PEFT library is required for LoRA support. Please install it with:\n"
-            "pip install peft>=0.7.0"
+            "PEFT library is required for LoRA support.\n"
+            "Install with:\n\n"
+            "  pip install peft>=0.7.0\n"
         )
 
     try:
-        # Load LoRA weights
-        if gen_config.lora_config_path:
-            # If config file is provided, use it for more control
-            pipe.load_lora_weights(
-                gen_config.lora_path,
-                weight_name=None,  # Will be inferred from safetensors file
-                adapter_name="custom_lora"
-            )
-        else:
-            # Load from safetensors directly
-            pipe.load_lora_weights(gen_config.lora_path, adapter_name="custom_lora")
+        pipe.load_lora_weights(
+            gen_config.lora_path,
+            adapter_name="custom_lora",
+        )
 
-        # Fuse LoRA weights into the model for better performance
-        pipe.fuse_lora(adapter_names=["custom_lora"], lora_scale=gen_config.lora_scale)
+        # Fuse LoRA into base weights (saves VRAM during inference)
+        pipe.fuse_lora(
+            adapter_names=["custom_lora"],
+            lora_scale=gen_config.lora_scale,
+        )
 
-        print(f"LoRA applied successfully: {gen_config.lora_path} (scale: {gen_config.lora_scale})")
+        print(
+            f"LoRA successfully fused:\n"
+            f"  path: {gen_config.lora_path}\n"
+            f"  scale: {gen_config.lora_scale}"
+        )
 
     except Exception as e:
-        error_msg = f"Failed to apply LoRA from '{gen_config.lora_path}': {e}\n"
-        if "PEFT backend is required" in str(e):
-            error_msg += "Make sure PEFT library is installed: pip install peft>=0.7.0\n"
-        error_msg += "Make sure the LoRA file is valid and compatible with FLUX model."
-        raise RuntimeError(error_msg)
+        raise RuntimeError(
+            f"Failed to apply LoRA from '{gen_config.lora_path}'.\n"
+            f"Error: {e}\n\n"
+            "Ensure:\n"
+            "- LoRA is compatible with FLUX\n"
+            "- .safetensors file is valid\n"
+            "- PEFT >= 0.7.0 is installed"
+        )

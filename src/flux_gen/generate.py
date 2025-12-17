@@ -8,6 +8,23 @@ def run_generation(gen_config: config.GenerationConfig):
     # Apply environment settings
     env.apply_compatibility_settings()
 
+    # Configure PyTorch thread settings for better CPU usage
+    try:
+        import torch
+        import multiprocessing
+
+        # Set PyTorch thread pool size based on CPU cores
+        cpu_count = multiprocessing.cpu_count()
+        torch_threads = max(1, min(4, cpu_count // 2))  # Use half the cores, max 4
+        torch.set_num_threads(torch_threads)
+        torch.set_num_interop_threads(torch_threads)
+
+        print(f"PyTorch threads: {torch.get_num_threads()} intra-op, {torch.get_num_interop_threads()} inter-op")
+    except ImportError:
+        print("Warning: PyTorch not available for thread optimization")
+    except Exception as e:
+        print(f"Warning: Could not configure PyTorch threads: {e}")
+
     # Get runtime configuration
     runtime_config = config.RuntimeConfig.from_env()
 

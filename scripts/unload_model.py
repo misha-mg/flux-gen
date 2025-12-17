@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """
-Script to unload FLUX model from GPU memory to free up resources.
+FLUX model unload utility for RunPod.
 
-This script can be used to:
-1. Manually unload models from memory
-2. Be called from HTTP endpoints for programmatic control
-3. Be integrated into Runpod lifecycle management
+IMPORTANT:
+- This script runs in the SAME process where the model was loaded.
+- GPU memory is ONLY fully released when the process exits.
+- CUDA cache cleanup is best-effort, not a guarantee.
 
-Usage:
-    python scripts/unload_model.py [--force] [--verbose]
-
-Options:
-    --force: Force unload even if model appears not to be loaded
-    --verbose: Show detailed output
+Recommended usage on RunPod:
+- Call this script or function
+- Let the process exit
+- Rely on RunPod to restart the worker / pod
 """
+
+from __future__ import annotations
 
 import argparse
 import gc
+import os
 import sys
 from typing import Optional
 
@@ -25,117 +26,119 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    print("Warning: PyTorch not available. Cannot clear GPU cache.")
-
-# Global reference to keep track of loaded models (if needed)
-_loaded_models = []
 
 
-def unload_model_from_memory(model: Optional[object] = None, verbose: bool = False) -> bool:
+def log_vram(stage: str):
+    """Log current VRAM usage (best-effort)."""
+    if not TORCH_AVAILABLE or not torch.cuda.is_available():
+        print(f"[VRAM] {stage}: CUDA not available")
+        return
+
+    allocated = torch.cuda.memory_allocated() / 1024**3
+    reserved = torch.cuda.memory_reserved() / 1024**3
+    print(
+        f"[VRAM] {stage}: "
+        f"allocated={allocated:.2f}GB, "
+        f"reserved={reserved:.2f}GB"
+    )
+
+
+def unload_model(
+    model: Optional[object] = None,
+    verbose: bool = False,
+    exit_process: bool = False,
+) -> None:
     """
-    Unload a model from memory and clear GPU cache.
+    Best-effort unload of a model and optional process termination.
 
     Args:
-        model: The model object to unload (optional)
-        verbose: Whether to print detailed information
-
-    Returns:
-        bool: True if successful, False otherwise
+        model: Model or pipeline object to dereference
+        verbose: Print debug information
+        exit_process: If True, terminate the Python process (RECOMMENDED on RunPod)
     """
-    try:
-        # Delete the model object if provided
-        if model is not None:
-            if verbose:
-                print(f"Unloading model: {type(model).__name__}")
-            del model
 
-        # Clear any global references
-        global _loaded_models
-        if _loaded_models:
-            if verbose:
-                print(f"Clearing {len(_loaded_models)} model references")
-            _loaded_models.clear()
+    if verbose:
+        print("Starting model unload sequence")
 
-        # Force garbage collection
+    if TORCH_AVAILABLE and torch.cuda.is_available():
+        log_vram("before unload")
+
+    # Remove Python references
+    if model is not None:
         if verbose:
-            print("Running garbage collection...")
-        gc.collect()
+            print(f"Dereferencing model object: {type(model).__name__}")
+        del model
 
-        # Clear CUDA cache if available
-        if TORCH_AVAILABLE and torch.cuda.is_available():
-            if verbose:
-                print("Clearing CUDA cache...")
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()  # Ensure all operations are complete
+    # Force garbage collection
+    if verbose:
+        print("Running Python garbage collection")
+    gc.collect()
 
-            # Check memory usage
-            memory_allocated = torch.cuda.memory_allocated() / 1024**3  # GB
-            memory_reserved = torch.cuda.memory_reserved() / 1024**3   # GB
-
-            if verbose:
-                print(f"Allocated: {memory_allocated:.2f}GB, Reserved: {memory_reserved:.2f}GB")
-        else:
-            if verbose:
-                print("CUDA not available or PyTorch not installed. Skipping GPU cache clearing.")
-
+    # Clear CUDA cache (best-effort)
+    if TORCH_AVAILABLE and torch.cuda.is_available():
         if verbose:
-            print("Model unloading completed successfully.")
-        return True
+            print("Clearing CUDA cache")
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        log_vram("after cuda cache clear")
 
-    except Exception as e:
-        print(f"Error during model unloading: {e}", file=sys.stderr)
-        return False
+    if exit_process:
+        if verbose:
+            print("Exiting process to fully release GPU memory")
+        # Preferred for RunPod – clean exit
+        sys.exit(0)
+
+    if verbose:
+        print(
+            "Unload completed (best-effort). "
+            "NOTE: Full VRAM release requires process termination."
+        )
 
 
 def main():
-    """Main entry point for the script."""
     parser = argparse.ArgumentParser(
-        description="Unload FLUX model from GPU memory",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python scripts/unload_model.py --verbose
-  python scripts/unload_model.py --force
-        """
+        description="Unload FLUX model (RunPod-safe)",
     )
+
     parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force unload even if no models appear to be loaded'
+        "--verbose", "-v",
+        action="store_true",
+        help="Show detailed logs",
     )
+
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Show detailed output'
+        "--exit",
+        action="store_true",
+        help=(
+            "Exit the Python process after cleanup. "
+            "RECOMMENDED for RunPod to fully release GPU memory."
+        ),
     )
 
     args = parser.parse_args()
 
     if args.verbose:
-        print("FLUX Model Unloader")
+        print("FLUX Model Unloader (RunPod)")
         print("=" * 40)
 
         if TORCH_AVAILABLE:
             print(f"PyTorch version: {torch.__version__}")
             print(f"CUDA available: {torch.cuda.is_available()}")
             if torch.cuda.is_available():
-                print(f"CUDA device count: {torch.cuda.device_count()}")
-                print(f"Current CUDA device: {torch.cuda.current_device()}")
+                print(f"CUDA device: {torch.cuda.get_device_name(0)}")
         else:
             print("PyTorch not available")
 
         print()
 
-    # Perform the unload operation
-    success = unload_model_from_memory(verbose=args.verbose)
+    unload_model(
+        model=None,          # model must be dereferenced by caller if needed
+        verbose=args.verbose,
+        exit_process=args.exit,
+    )
 
-    if success:
-        print("✓ Model unloaded successfully")
-        return 0
-    else:
-        print("✗ Failed to unload model", file=sys.stderr)
-        return 1
+    print("✓ Unload routine completed")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

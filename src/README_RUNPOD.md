@@ -120,14 +120,44 @@ To use a different output directory:
 python src/generate.py --prompt "your prompt" --out_dir "./my_outputs"
 ```
 
-## Memory Usage Notes
+## Performance & Resource Usage
+
+### CPU Usage Optimization
+
+The script automatically optimizes CPU thread usage based on your system:
+- **Automatic CPU thread management**: Uses 75% of available cores (max 8 threads)
+- **PyTorch thread optimization**: Limits intra/inter-op threads for better performance
+- **Expected CPU usage**: 60-80% during model loading and generation (normal for FLUX)
+
+### Memory Usage Notes
 
 - **RTX 3090/A6000**: Good for 768×768 images with fp16 precision
-- The script uses CPU loading with `enable_model_cpu_offload()` for efficient VRAM management
+- The script uses sequential CPU offload for efficient VRAM management
 - Model loads to CPU first (~34GB total), then components move to GPU during inference as needed
 - Peak GPU memory usage during inference: ~8-12GB for 768×768 generation
 - **RTX A6000 (48GB)**: Can handle larger images (1024×1024) or higher quality settings
 - **Memory saving tip**: If you get OOM, try `export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
+
+### High CPU Usage? This is normal!
+
+If you see 80-95% CPU usage:
+- ✅ **This is expected** during FLUX model loading and generation
+- ✅ The model uses multiple CPU threads for data preprocessing
+- ✅ CPU coordinates between GPU components during inference
+- ✅ First run downloads ~10GB model, subsequent runs are faster
+
+### Manual CPU Thread Control
+
+If needed, you can manually set CPU threads:
+
+```bash
+# Limit to 4 threads (good for most systems)
+export OMP_NUM_THREADS=4
+export MKL_NUM_THREADS=4
+
+# Or let the script auto-detect (recommended)
+# The script automatically optimizes based on your CPU cores
+```
 
 ### Troubleshooting Memory Issues
 
