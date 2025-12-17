@@ -39,7 +39,7 @@ def load_flux_pipeline(gen_config, runtime_config):
         pipe = FluxPipeline.from_pretrained(
             gen_config.model_id,
             torch_dtype=torch.bfloat16,      # CRITICAL: avoid FP32
-            device_map="cuda",               # keep full model on GPU
+            device_map="balanced",           # balance across GPU devices
             token=runtime_config.hf_token,
         )
     except Exception as e:
