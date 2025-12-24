@@ -11,6 +11,7 @@ Key principles:
 from __future__ import annotations
 
 import torch
+from pathlib import Path
 
 # Optional PEFT support for LoRA
 try:
@@ -100,9 +101,25 @@ def apply_lora_to_pipeline(pipe, gen_config):
         else:
             scales = [1.0] * len(paths)
 
+        # Resolve local file paths to absolute paths; if missing, try project root
+        resolved_paths: list[str] = []
+        project_root = Path(__file__).resolve().parents[2]
+        for path in paths:
+            p = Path(path)
+            if not p.exists():
+                candidate = project_root / path
+                if candidate.exists():
+                    p = candidate
+                else:
+                    raise RuntimeError(
+                        f"LoRA file not found locally: '{path}'. Tried '{path}' and '{candidate}'. "
+                        "If you intended to load from Hugging Face, provide the repo_id; otherwise pass an absolute or valid relative path to the .safetensors file."
+                    )
+            resolved_paths.append(str(p))
+
         # Load each LoRA under its own adapter name and fuse with corresponding scale
         adapter_names: list[str] = []
-        for idx, path in enumerate(paths):
+        for idx, path in enumerate(resolved_paths):
             adapter = f"custom_lora_{idx}"
             pipe.load_lora_weights(path, adapter_name=adapter)
             adapter_names.append(adapter)
@@ -112,7 +129,7 @@ def apply_lora_to_pipeline(pipe, gen_config):
             pipe.fuse_lora(adapter_names=[adapter], lora_scale=scale)
 
         print("LoRA(s) successfully fused:")
-        for p, s in zip(paths, scales):
+        for p, s in zip(resolved_paths, scales):
             print(f"  path: {p}  scale: {s}")
 
     except Exception as e:
