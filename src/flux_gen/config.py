@@ -19,10 +19,17 @@ class GenerationConfig:
     guidance_scale: float
     num_inference_steps: int
     out_dir: Path
+    # Backwards-compatible single LoRA fields:
     lora_path: str | None = None  # Path to LoRA weights file (.safetensors)
     lora_config_path: str | None = None  # Path to LoRA config file (.json)
-    lora_scale: float = 1.0  # Scale factor for LoRA weights
-    lora_trigger_word: str | None = None  # Trigger word for LoRA (auto-added to prompt)
+    lora_scale: float = 1.0  # Scale factor for single LoRA weights
+    lora_trigger_word: str | None = None  # Trigger word for single LoRA (auto-added to prompt)
+
+    # Support multiple LoRAs:
+    lora_paths: list[str] | None = None  # Multiple LoRA weight paths (use CLI --lora_paths)
+    lora_config_paths: list[str] | None = None
+    lora_scales: list[float] | None = None
+    lora_trigger_words: list[str] | None = None
 
     @property
     def output_path(self) -> Path:
@@ -34,8 +41,18 @@ class GenerationConfig:
     @property
     def effective_prompt(self) -> str:
         """Get the effective prompt with LoRA trigger word if specified."""
-        if self.lora_trigger_word and self.lora_path:
-            return f"{self.lora_trigger_word}, {self.prompt}"
+        triggers: list[str] = []
+
+        # Single LoRA trigger (backwards compatible)
+        if self.lora_trigger_word and (self.lora_path or (self.lora_paths and len(self.lora_paths) > 0)):
+            triggers.append(self.lora_trigger_word)
+
+        # Multiple LoRA triggers
+        if self.lora_trigger_words and self.lora_paths:
+            triggers.extend(self.lora_trigger_words)
+
+        if triggers:
+            return f"{', '.join(triggers)}, {self.prompt}"
         return self.prompt
 
 

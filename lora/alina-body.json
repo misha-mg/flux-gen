@@ -1,8 +1,0 @@
-{
-  "name": "alina-body",
-  "trigger_word": "alina-body",
-  "weights_file": "alina-body.safetensors",
-  "scale": 1.0,
-  "notes": "Place the .safetensors LoRA weights here. This JSON contains metadata only."
-}
-

@@ -61,7 +61,7 @@ def load_flux_pipeline(gen_config, runtime_config):
         print("xFormers not available — using default attention")
 
     # Apply LoRA if provided
-    if gen_config.lora_path:
+    if gen_config.lora_path or (hasattr(gen_config, "lora_paths") and gen_config.lora_paths):
         apply_lora_to_pipeline(pipe, gen_config)
 
     return pipe
@@ -80,22 +80,40 @@ def apply_lora_to_pipeline(pipe, gen_config):
         )
 
     try:
-        pipe.load_lora_weights(
-            gen_config.lora_path,
-            adapter_name="custom_lora",
-        )
+        # Support both single and multiple LoRAs.
+        paths: list[str] = []
+        if getattr(gen_config, "lora_paths", None):
+            paths = gen_config.lora_paths or []
+        elif gen_config.lora_path:
+            paths = [gen_config.lora_path]
 
-        # Fuse LoRA into base weights (saves VRAM during inference)
-        pipe.fuse_lora(
-            adapter_names=["custom_lora"],
-            lora_scale=gen_config.lora_scale,
-        )
+        if not paths:
+            print("No LoRA paths provided; skipping LoRA application.")
+            return
 
-        print(
-            f"LoRA successfully fused:\n"
-            f"  path: {gen_config.lora_path}\n"
-            f"  scale: {gen_config.lora_scale}"
-        )
+        # Determine scales per-LoRA (fall back to single lora_scale)
+        scales: list[float] = []
+        if getattr(gen_config, "lora_scales", None):
+            scales = gen_config.lora_scales or []
+        elif getattr(gen_config, "lora_scale", None) is not None:
+            scales = [gen_config.lora_scale] * len(paths)
+        else:
+            scales = [1.0] * len(paths)
+
+        # Load each LoRA under its own adapter name and fuse with corresponding scale
+        adapter_names: list[str] = []
+        for idx, path in enumerate(paths):
+            adapter = f"custom_lora_{idx}"
+            pipe.load_lora_weights(path, adapter_name=adapter)
+            adapter_names.append(adapter)
+
+            # Use corresponding scale if available, else 1.0
+            scale = scales[idx] if idx < len(scales) else 1.0
+            pipe.fuse_lora(adapter_names=[adapter], lora_scale=scale)
+
+        print("LoRA(s) successfully fused:")
+        for p, s in zip(paths, scales):
+            print(f"  path: {p}  scale: {s}")
 
     except Exception as e:
         raise RuntimeError(

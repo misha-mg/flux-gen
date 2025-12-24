@@ -59,16 +59,38 @@ def parse_args():
         help="Path to LoRA weights file (.safetensors)"
     )
     parser.add_argument(
+        "--lora_paths",
+        action="append",
+        type=str,
+        default=None,
+        help="Path to LoRA weights file (.safetensors). Can be provided multiple times."
+    )
+    parser.add_argument(
         "--lora_config_path",
         type=str,
         default=None,
         help="Path to LoRA config file (.json)"
     )
     parser.add_argument(
+        "--lora_config_paths",
+        action="append",
+        type=str,
+        default=None,
+        help="Path to LoRA config file (.json). Can be provided multiple times."
+    )
+    parser.add_argument(
         "--lora_scale",
+        # keep single-value for backwards compatibility; also accept multiple via --lora_scales
         type=float,
         default=1.0,
         help="Scale factor for LoRA weights (default: 1.0)"
+    )
+    parser.add_argument(
+        "--lora_scales",
+        action="append",
+        type=float,
+        default=None,
+        help="Scale factor for each LoRA when providing multiple --lora_paths"
     )
     parser.add_argument(
         "--lora_trigger_word",
@@ -76,17 +98,29 @@ def parse_args():
         default=None,
         help="Trigger word for LoRA (automatically added to prompt start)"
     )
+    parser.add_argument(
+        "--lora_trigger_words",
+        action="append",
+        type=str,
+        default=None,
+        help="Trigger words for multiple LoRAs (provide once per --lora_paths)"
+    )
 
     args = parser.parse_args()
 
     # Check PEFT availability if LoRA is requested
-    if args.lora_path:
+    if args.lora_path or args.lora_paths:
         try:
             import peft
         except ImportError:
             print("Warning: PEFT library is required for LoRA support but not installed.")
             print("Install it with: pip install peft>=0.7.0")
             print("Continuing without LoRA...")
+
+    # Normalize single / multiple LoRA args into GenerationConfig fields
+    normalized_lora_paths = args.lora_paths or ([args.lora_path] if args.lora_path else None)
+    normalized_lora_scales = args.lora_scales or ([args.lora_scale] if args.lora_scale is not None else None)
+    normalized_lora_triggers = args.lora_trigger_words or ([args.lora_trigger_word] if args.lora_trigger_word else None)
 
     return GenerationConfig(
         model_id=args.model_id,
@@ -100,4 +134,8 @@ def parse_args():
         lora_config_path=args.lora_config_path,
         lora_scale=args.lora_scale,
         lora_trigger_word=args.lora_trigger_word,
+        lora_paths=normalized_lora_paths,
+        lora_config_paths=args.lora_config_paths,
+        lora_scales=normalized_lora_scales,
+        lora_trigger_words=normalized_lora_triggers,
     )
