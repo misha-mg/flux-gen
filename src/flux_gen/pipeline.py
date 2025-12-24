@@ -14,6 +14,7 @@ import torch
 from pathlib import Path
 
 # Diffusers pipeline
+import diffusers
 from diffusers import FluxPipeline
 
 # Optional PEFT support for LoRA
@@ -68,6 +69,15 @@ def load_flux_pipeline(gen_config, runtime_config):
 
     # Optional: IP-Adapter (reference image conditioning)
     if getattr(gen_config, "reference_image", None):
+        if not hasattr(pipe, "load_ip_adapter"):
+            raise RuntimeError(
+                "IP-Adapter was requested (--reference_image is set), but your installed diffusers "
+                f"({getattr(diffusers, '__version__', 'unknown')}) does not support "
+                "`FluxPipeline.load_ip_adapter`.\n\n"
+                "Fix: upgrade diffusers in your environment, for example:\n"
+                "  pip install -U 'diffusers>=0.35.0'\n\n"
+                "Then re-run the command."
+            )
         try:
             pipe.load_ip_adapter(
                 gen_config.ip_adapter_repo,

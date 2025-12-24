@@ -48,6 +48,8 @@ python src/generate.py \
 
 Це увімкне **IP-Adapter** для FLUX і передасть референс-зображення як `ip_adapter_image`.
 
+> Важливо: для цього потрібна свіжа версія `diffusers` (див. `requirements.txt`). Якщо бачите помилку про відсутній `load_ip_adapter` — оновіть `diffusers`.
+
 ### Использование с LoRA
 
 **Важно:** Для использования LoRA требуется установить PEFT библиотеку:

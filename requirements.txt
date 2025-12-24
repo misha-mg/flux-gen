@@ -1,5 +1,6 @@
 # Core dependencies for FLUX image generation
-diffusers>=0.30.0,<0.32.0  # Compatible with PyTorch 2.4.x
+# NOTE: IP-Adapter support for FLUX requires a newer diffusers version.
+diffusers>=0.35.0,<0.40.0  # Compatible with PyTorch 2.4.x
 transformers>=4.44.0
 accelerate>=0.34.0
 safetensors>=0.4.5
