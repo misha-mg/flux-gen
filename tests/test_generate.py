@@ -55,6 +55,42 @@ def test_run_generation_full_cycle(tmp_path):
         mock_save.assert_called_once_with(mock_image, gen_config.output_path)
 
 
+def test_run_generation_with_negative_prompt(tmp_path):
+    """Test generation when negative_prompt is provided."""
+    gen_config = GenerationConfig(
+        model_id="test/model",
+        prompt="test prompt",
+        height=256,
+        width=320,
+        guidance_scale=2.0,
+        num_inference_steps=5,
+        out_dir=tmp_path / "outputs",
+        negative_prompt="lowres, bad anatomy"
+    )
+
+    with patch('flux_gen.env.apply_compatibility_settings') as mock_env, \
+         patch('flux_gen.config.RuntimeConfig.from_env', return_value=RuntimeConfig(hf_token="test", has_cuda=True)) as mock_runtime, \
+         patch('flux_gen.device.detect_and_report_device') as mock_device_detect, \
+         patch('flux_gen.device.report_hf_token_status') as mock_token_report, \
+         patch('flux_gen.io.ensure_output_directory') as mock_ensure_dir, \
+         patch('flux_gen.pipeline.load_flux_pipeline') as mock_load_pipe, \
+         patch('flux_gen.io.save_generated_image') as mock_save:
+
+        mock_pipe = MagicMock()
+        mock_image = MagicMock()
+        mock_pipe.return_value.images = [mock_image]
+        mock_load_pipe.return_value = mock_pipe
+
+        run_generation(gen_config)
+
+        mock_load_pipe.assert_called_once()
+        # check that the pipeline was called with negative_prompt passed through
+        mock_pipe.assert_called_once()
+        _, kwargs = mock_pipe.call_args
+        assert kwargs.get("negative_prompt") == "lowres, bad anatomy"
+        mock_save.assert_called_once_with(mock_image, gen_config.output_path)
+
+
 def test_run_generation_with_reference_image(tmp_path):
     """Test generation cycle when reference image is enabled (IP-Adapter image passed)."""
     gen_config = GenerationConfig(

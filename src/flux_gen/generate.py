@@ -59,6 +59,9 @@ def run_generation(gen_config: config.GenerationConfig):
             height=gen_config.height,
         )
         pipe_kwargs["ip_adapter_image"] = ref_img
+    # Optional: negative prompt
+    if getattr(gen_config, "negative_prompt", None):
+        pipe_kwargs["negative_prompt"] = gen_config.negative_prompt
 
     image = pipe(**pipe_kwargs).images[0]
 

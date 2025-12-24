@@ -28,6 +28,8 @@ class GenerationConfig:
     ip_adapter_weight_name: str = "ip_adapter.safetensors"
     ip_adapter_image_encoder: str = "openai/clip-vit-large-patch14"
     ip_adapter_scale: float = 1.0
+    # Optional negative prompt to discourage undesired content
+    negative_prompt: str | None = None
     # Backwards-compatible single LoRA fields:
     lora_path: str | None = None  # Path to LoRA weights file (.safetensors)
     lora_config_path: str | None = None  # Path to LoRA config file (.json)

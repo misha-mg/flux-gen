@@ -23,6 +23,7 @@ def test_parse_args_defaults():
         assert config.num_inference_steps == 20
         assert config.output_path == Path("src/outputs/flux_1_dev.png")
         assert config.reference_image is None
+        assert config.negative_prompt is None
         assert config.lora_path is None
         assert config.lora_config_path is None
         assert config.lora_scale == 1.0
@@ -56,6 +57,7 @@ def test_parse_args_custom_values():
         assert config.guidance_scale == 2.0
         assert config.num_inference_steps == 10
         assert config.output_path == Path('./custom_outputs/model.png')
+        # custom negative prompt not provided in this test
     finally:
         sys.argv = original_argv
 

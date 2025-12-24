@@ -83,6 +83,12 @@ def parse_args():
         help="Image encoder model for IP-Adapter (default: openai/clip-vit-large-patch14). Only used when --reference_image is set."
     )
     parser.add_argument(
+        "--negative_prompt",
+        type=str,
+        default=None,
+        help="Negative prompt to discourage undesired content (optional)"
+    )
+    parser.add_argument(
         "--lora_path",
         type=str,
         default=None,
@@ -165,6 +171,7 @@ def parse_args():
         ip_adapter_repo=args.ip_adapter_repo,
         ip_adapter_weight_name=args.ip_adapter_weight_name,
         ip_adapter_image_encoder=args.ip_adapter_image_encoder,
+        negative_prompt=args.negative_prompt,
         lora_path=args.lora_path,
         lora_config_path=args.lora_config_path,
         lora_scale=args.lora_scale,

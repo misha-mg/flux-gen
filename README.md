@@ -54,6 +54,14 @@ python src/generate.py \
 
 ### Использование с LoRA
 
+### Negative prompt
+
+You can pass a negative prompt to discourage undesired content:
+
+```bash
+python src/generate.py --negative_prompt "lowres, blurry, bad anatomy, watermark, text"
+```
+
 **Важно:** Для использования LoRA требуется установить PEFT библиотеку:
 ```bash
 pip install peft>=0.7.0
