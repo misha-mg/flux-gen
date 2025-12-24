@@ -36,3 +36,28 @@ def apply_compatibility_settings():
 
     # Additional PyTorch settings for better memory management
     os.environ.setdefault('PYTORCH_CUDA_ALLOC_CONF', 'expandable_segments:True')
+
+    # PyTorch compatibility shim:
+    # Some newer diffusers versions call torch.nn.functional.scaled_dot_product_attention
+    # with enable_gqa=..., which doesn't exist in older PyTorch builds.
+    try:
+        import inspect
+        import torch
+
+        sdp = torch.nn.functional.scaled_dot_product_attention
+        try:
+            params = inspect.signature(sdp).parameters
+        except (TypeError, ValueError):
+            params = {}
+
+        if "enable_gqa" not in params:
+            _orig_sdp = sdp
+
+            def _sdp_compat(*args, **kwargs):
+                kwargs.pop("enable_gqa", None)
+                return _orig_sdp(*args, **kwargs)
+
+            torch.nn.functional.scaled_dot_product_attention = _sdp_compat  # type: ignore[attr-defined]
+            print("Applied PyTorch SDP compat shim (ignored enable_gqa).")
+    except Exception as e:
+        print(f"Warning: Could not apply SDP compat shim: {e}")

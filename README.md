@@ -49,6 +49,8 @@ python src/generate.py \
 Це увімкне **IP-Adapter** для FLUX і передасть референс-зображення як `ip_adapter_image`.
 
 > Важливо: для цього потрібна свіжа версія `diffusers` (див. `requirements.txt`). Якщо бачите помилку про відсутній `load_ip_adapter` — оновіть `diffusers`.
+>
+> Якщо після оновлення бачите помилку `scaled_dot_product_attention() got an unexpected keyword argument 'enable_gqa'` — це означає, що у вас старіший `torch`. У проєкті є compatibility shim, але якщо хочете “правильно”, оновіть `torch` до сучасної версії під вашу CUDA.
 
 ### Использование с LoRA
 
