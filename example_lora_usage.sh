@@ -28,6 +28,15 @@ python src/generate.py \
   --lora_path "$LORA_WEIGHTS" \
   --lora_scale 1.2
 
+# Пример с референсным фото (IP-Adapter)
+# Положите картинку в reference_images/, например reference_images/alina.png
+python src/generate.py \
+  --prompt "alina-face, portrait photo, beautiful woman, detailed face, professional lighting" \
+  --lora_path "$LORA_WEIGHTS" \
+  --lora_scale 0.8 \
+  --reference_image "alina.png" \
+  --ip_adapter_scale 1.0
+
 # НОВЫЙ СПОСОБ: автоматическое добавление trigger word
 python src/generate.py \
   --prompt "cinematic scene, dramatic lighting, professional photo" \

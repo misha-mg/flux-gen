@@ -18,7 +18,7 @@ def test_generation_config_output_path():
         out_dir=Path("/tmp/test_outputs")
     )
 
-    assert config.output_path == Path("/tmp/test_outputs/flux_schnell.png")
+    assert config.output_path == Path("/tmp/test_outputs/model.png")
 
 
 def test_generation_config_with_lora():

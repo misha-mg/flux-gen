@@ -43,13 +43,24 @@ def run_generation(gen_config: config.GenerationConfig):
     if effective_prompt != gen_config.prompt:
         print(f"Using effective prompt with LoRA trigger: '{effective_prompt}'")
 
-    image = pipe(
+    pipe_kwargs = dict(
         prompt=effective_prompt,
         height=gen_config.height,
         width=gen_config.width,
         guidance_scale=gen_config.guidance_scale,
         num_inference_steps=gen_config.num_inference_steps,
-    ).images[0]
+    )
+
+    # Optional: reference image conditioning via IP-Adapter
+    if getattr(gen_config, "reference_image", None):
+        ref_img = io.load_reference_image(
+            gen_config.reference_image,
+            width=gen_config.width,
+            height=gen_config.height,
+        )
+        pipe_kwargs["ip_adapter_image"] = ref_img
+
+    image = pipe(**pipe_kwargs).images[0]
 
     # Save result
     io.save_generated_image(image, gen_config.output_path)

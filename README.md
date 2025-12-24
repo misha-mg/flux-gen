@@ -35,6 +35,19 @@ python src/generate.py --prompt "ваш промпт здесь"
 
 По умолчанию изображения сохраняются в `src/outputs/flux_schnell.png`.
 
+### Використання з референсним фото (reference image)
+
+1. Покладіть файл `png/jpg/webp` у `reference_images/` (наприклад `reference_images/alina.png`).
+2. Запустіть:
+
+```bash
+python src/generate.py \
+  --reference_image alina.png \
+  --prompt "portrait photo, studio light, high detail"
+```
+
+Це увімкне **IP-Adapter** для FLUX і передасть референс-зображення як `ip_adapter_image`.
+
 ### Использование с LoRA
 
 **Важно:** Для использования LoRA требуется установить PEFT библиотеку:

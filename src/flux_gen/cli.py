@@ -53,6 +53,36 @@ def parse_args():
         help="Number of inference steps (default: 20)"
     )
     parser.add_argument(
+        "--reference_image",
+        type=str,
+        default=None,
+        help="Reference image for conditioning (path or filename inside reference_images/). Enables IP-Adapter when set."
+    )
+    parser.add_argument(
+        "--ip_adapter_scale",
+        type=float,
+        default=1.0,
+        help="IP-Adapter scale (default: 1.0). Only used when --reference_image is set."
+    )
+    parser.add_argument(
+        "--ip_adapter_repo",
+        type=str,
+        default="XLabs-AI/flux-ip-adapter",
+        help="Hugging Face repo_id for FLUX IP-Adapter (default: XLabs-AI/flux-ip-adapter). Only used when --reference_image is set."
+    )
+    parser.add_argument(
+        "--ip_adapter_weight_name",
+        type=str,
+        default="ip_adapter.safetensors",
+        help="IP-Adapter weights filename inside the repo (default: ip_adapter.safetensors). Only used when --reference_image is set."
+    )
+    parser.add_argument(
+        "--ip_adapter_image_encoder",
+        type=str,
+        default="openai/clip-vit-large-patch14",
+        help="Image encoder model for IP-Adapter (default: openai/clip-vit-large-patch14). Only used when --reference_image is set."
+    )
+    parser.add_argument(
         "--lora_path",
         type=str,
         default=None,
@@ -130,6 +160,11 @@ def parse_args():
         guidance_scale=args.guidance_scale,
         num_inference_steps=args.num_inference_steps,
         out_dir=Path(args.out_dir),
+        reference_image=args.reference_image,
+        ip_adapter_scale=args.ip_adapter_scale,
+        ip_adapter_repo=args.ip_adapter_repo,
+        ip_adapter_weight_name=args.ip_adapter_weight_name,
+        ip_adapter_image_encoder=args.ip_adapter_image_encoder,
         lora_path=args.lora_path,
         lora_config_path=args.lora_config_path,
         lora_scale=args.lora_scale,

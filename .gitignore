@@ -1,7 +1,11 @@
 .venv/
 __pycache__/
 outputs/
-*.png
 .DS_Store
 
 lora/
+
+# Reference images (keep only docs/placeholder tracked)
+reference_images/**/*.{png,jpg,jpeg,webp,gif}
+!reference_images/README.md
+!reference_images/.gitkeep

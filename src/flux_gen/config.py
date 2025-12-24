@@ -8,6 +8,9 @@ from pathlib import Path
 # Default model ID - can be overridden by MODEL_ID environment variable
 MODEL_ID = os.getenv("MODEL_ID", "black-forest-labs/FLUX.1-dev")
 
+# Default directory name (relative to repo root) for reference images
+REFERENCE_IMAGES_DIRNAME = "reference_images"
+
 
 @dataclass
 class GenerationConfig:
@@ -19,6 +22,12 @@ class GenerationConfig:
     guidance_scale: float
     num_inference_steps: int
     out_dir: Path
+    # Optional: reference image conditioning (IP-Adapter for FLUX)
+    reference_image: str | None = None  # Path to image or filename inside reference_images/
+    ip_adapter_repo: str = "XLabs-AI/flux-ip-adapter"
+    ip_adapter_weight_name: str = "ip_adapter.safetensors"
+    ip_adapter_image_encoder: str = "openai/clip-vit-large-patch14"
+    ip_adapter_scale: float = 1.0
     # Backwards-compatible single LoRA fields:
     lora_path: str | None = None  # Path to LoRA weights file (.safetensors)
     lora_config_path: str | None = None  # Path to LoRA config file (.json)

@@ -13,6 +13,9 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 
+# Diffusers pipeline
+from diffusers import FluxPipeline
+
 # Optional PEFT support for LoRA
 try:
     import peft
@@ -30,8 +33,6 @@ def load_flux_pipeline(gen_config, runtime_config):
     - no CPU offload
     - safe LoRA fusion
     """
-
-    from diffusers import FluxPipeline
 
     if not runtime_config.has_cuda:
         raise RuntimeError("CUDA is required to run FLUX models.")
@@ -64,6 +65,25 @@ def load_flux_pipeline(gen_config, runtime_config):
     # Apply LoRA if provided
     if gen_config.lora_path or (hasattr(gen_config, "lora_paths") and gen_config.lora_paths):
         apply_lora_to_pipeline(pipe, gen_config)
+
+    # Optional: IP-Adapter (reference image conditioning)
+    if getattr(gen_config, "reference_image", None):
+        try:
+            pipe.load_ip_adapter(
+                gen_config.ip_adapter_repo,
+                weight_name=gen_config.ip_adapter_weight_name,
+                image_encoder_pretrained_model_name_or_path=gen_config.ip_adapter_image_encoder,
+            )
+            pipe.set_ip_adapter_scale(gen_config.ip_adapter_scale)
+            print(
+                "IP-Adapter enabled: "
+                f"repo={gen_config.ip_adapter_repo} "
+                f"weight={gen_config.ip_adapter_weight_name} "
+                f"encoder={gen_config.ip_adapter_image_encoder} "
+                f"scale={gen_config.ip_adapter_scale}"
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to enable IP-Adapter. Error: {e}")
 
     return pipe
 
