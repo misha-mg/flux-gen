@@ -178,6 +178,76 @@ def parse_args():
         help="Trigger words for multiple LoRAs (provide once per --lora_paths)"
     )
 
+    parser.add_argument(
+        "--lora_fuse",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Fuse LoRA into the model (default: True). Disable (--no-lora_fuse) if you want to change LoRA scales per-stage (e.g. with --refine)."
+    )
+
+    # Optional refine (img2img) stage
+    parser.add_argument(
+        "--refine",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Enable a second-pass refine stage (img2img) after base generation (default: False)."
+    )
+    parser.add_argument(
+        "--refine_input_image",
+        type=str,
+        default=None,
+        help="Run refine-only (img2img) on an existing image file. When set, base generation is skipped and output is saved as '<input>_refine.png' next to the input."
+    )
+    parser.add_argument(
+        "--refine_strength",
+        type=float,
+        default=0.28,
+        help="img2img strength for refine (default: 0.28). Lower = preserve base, higher = redraw."
+    )
+    parser.add_argument(
+        "--refine_num_inference_steps",
+        type=int,
+        default=None,
+        help="Number of steps for refine. Default: reuse --num_inference_steps."
+    )
+    parser.add_argument(
+        "--refine_guidance_scale",
+        type=float,
+        default=None,
+        help="Guidance scale for refine. Default: reuse --guidance_scale."
+    )
+    parser.add_argument(
+        "--refine_upscale",
+        type=float,
+        default=1.0,
+        help="Upscale factor applied to base image before refine (default: 1.0; try 1.5-2.0)."
+    )
+    parser.add_argument(
+        "--refine_prompt",
+        type=str,
+        default=None,
+        help="Prompt override for refine (default: reuse effective prompt). Supports '@file.txt' syntax."
+    )
+    parser.add_argument(
+        "--refine_negative_prompt",
+        type=str,
+        default=None,
+        help="Negative prompt override for refine (default: reuse --negative_prompt). Supports '@file.txt' syntax."
+    )
+    parser.add_argument(
+        "--refine_ip_adapter_scale",
+        type=float,
+        default=None,
+        help="IP-Adapter scale for refine (default: reuse --ip_adapter_scale)."
+    )
+    parser.add_argument(
+        "--refine_lora_scales",
+        action="append",
+        type=float,
+        default=None,
+        help="Per-LoRA scales to apply for refine stage (only works when --no-lora_fuse is set). Provide once per --lora_paths."
+    )
+
     args = parser.parse_args()
 
     # Load prompts from files if requested (or via '@file' syntax)
@@ -190,6 +260,10 @@ def parse_args():
         args.negative_prompt = _read_text_file(args.negative_prompt_file)
     else:
         args.negative_prompt = _maybe_read_at_file(args.negative_prompt)
+
+    # Allow '@file' syntax for refine prompt overrides too
+    args.refine_prompt = _maybe_read_at_file(args.refine_prompt)
+    args.refine_negative_prompt = _maybe_read_at_file(args.refine_negative_prompt)
 
     # Check PEFT availability if LoRA is requested
     if args.lora_path or args.lora_paths:
@@ -227,4 +301,15 @@ def parse_args():
         lora_config_paths=args.lora_config_paths,
         lora_scales=normalized_lora_scales,
         lora_trigger_words=normalized_lora_triggers,
+        lora_fuse=args.lora_fuse,
+        refine=args.refine,
+        refine_strength=args.refine_strength,
+        refine_num_inference_steps=args.refine_num_inference_steps,
+        refine_guidance_scale=args.refine_guidance_scale,
+        refine_upscale=args.refine_upscale,
+        refine_prompt=args.refine_prompt,
+        refine_negative_prompt=args.refine_negative_prompt,
+        refine_ip_adapter_scale=args.refine_ip_adapter_scale,
+        refine_lora_scales=args.refine_lora_scales,
+        refine_input_image=args.refine_input_image,
     )

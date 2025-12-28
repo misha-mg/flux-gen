@@ -65,7 +65,12 @@ def load_flux_pipeline(gen_config, runtime_config):
 
     # Apply LoRA if provided
     if gen_config.lora_path or (hasattr(gen_config, "lora_paths") and gen_config.lora_paths):
-        apply_lora_to_pipeline(pipe, gen_config)
+        adapter_names = apply_lora_to_pipeline(pipe, gen_config)
+        # stash adapter names for later stage-specific scaling (e.g. refine)
+        try:
+            setattr(pipe, "_flux_gen_lora_adapters", adapter_names)
+        except Exception:
+            pass
 
     # Optional: IP-Adapter (reference image conditioning)
     if getattr(gen_config, "reference_image", None):
@@ -131,43 +136,112 @@ def apply_lora_to_pipeline(pipe, gen_config):
         else:
             scales = [1.0] * len(paths)
 
-        # Resolve local file paths to absolute paths; if missing, try project root
+        # Resolve local file paths to absolute paths when possible.
+        # If a path doesn't exist locally, keep it as-is to allow diffusers to handle
+        # Hugging Face repo IDs or other resolvable identifiers.
         resolved_paths: list[str] = []
         project_root = Path(__file__).resolve().parents[2]
         for path in paths:
             p = Path(path)
-            if not p.exists():
-                candidate = project_root / path
-                if candidate.exists():
-                    p = candidate
-                else:
-                    raise RuntimeError(
-                        f"LoRA file not found locally: '{path}'. Tried '{path}' and '{candidate}'. "
-                        "If you intended to load from Hugging Face, provide the repo_id; otherwise pass an absolute or valid relative path to the .safetensors file."
-                    )
-            resolved_paths.append(str(p))
+            if p.exists():
+                resolved_paths.append(str(p))
+                continue
 
-        # Load each LoRA under its own adapter name and fuse with corresponding scale
+            candidate = project_root / path
+            if candidate.exists():
+                resolved_paths.append(str(candidate))
+                continue
+
+            # keep original string (may be HF repo_id or a path that will exist in runtime container)
+            resolved_paths.append(path)
+
+        # Load each LoRA under its own adapter name
         adapter_names: list[str] = []
         for idx, path in enumerate(resolved_paths):
             adapter = f"custom_lora_{idx}"
             pipe.load_lora_weights(path, adapter_name=adapter)
             adapter_names.append(adapter)
 
-            # Use corresponding scale if available, else 1.0
-            scale = scales[idx] if idx < len(scales) else 1.0
-            pipe.fuse_lora(adapter_names=[adapter], lora_scale=scale)
+        # If requested, fuse LoRA for speed (but then scales cannot be changed per-stage)
+        if getattr(gen_config, "lora_fuse", True):
+            for idx, adapter in enumerate(adapter_names):
+                scale = scales[idx] if idx < len(scales) else 1.0
+                pipe.fuse_lora(adapter_names=[adapter], lora_scale=scale)
 
-        print("LoRA(s) successfully fused:")
+        # Otherwise keep adapters, but activate them with the requested weights
+        else:
+            set_lora_scales(pipe, adapter_names, scales)
+
+        print("LoRA(s) successfully loaded:")
         for p, s in zip(resolved_paths, scales):
             print(f"  path: {p}  scale: {s}")
 
+        if getattr(gen_config, "lora_fuse", True):
+            print("LoRA mode: fused (fast, fixed scale)")
+        else:
+            print("LoRA mode: adapters (per-stage scaling enabled)")
+
+        return adapter_names
+
     except Exception as e:
         raise RuntimeError(
-            f"Failed to apply LoRA from '{gen_config.lora_path}'.\n"
+            f"Failed to apply LoRA.\n"
             f"Error: {e}\n\n"
             "Ensure:\n"
             "- LoRA is compatible with FLUX\n"
             "- .safetensors file is valid\n"
             "- PEFT >= 0.7.0 is installed"
+        )
+
+
+def set_lora_scales(pipe, adapter_names: list[str], scales: list[float] | None):
+    """
+    Apply per-adapter LoRA weights (only works when LoRAs are kept as adapters, not fused).
+
+    Diffusers has used both `adapter_weights` and `weights` kwarg names across versions.
+    We try both for compatibility.
+    """
+    if not adapter_names:
+        return
+
+    weights = scales or [1.0] * len(adapter_names)
+    # pad/truncate to match adapter_names length
+    if len(weights) < len(adapter_names):
+        weights = weights + [1.0] * (len(adapter_names) - len(weights))
+    elif len(weights) > len(adapter_names):
+        weights = weights[: len(adapter_names)]
+
+    if not hasattr(pipe, "set_adapters"):
+        raise RuntimeError(
+            "This diffusers pipeline does not support `set_adapters`, so per-stage LoRA scaling is unavailable. "
+            "Use --lora_fuse (default) or upgrade diffusers."
+        )
+
+    try:
+        pipe.set_adapters(adapter_names, adapter_weights=weights)
+    except TypeError:
+        pipe.set_adapters(adapter_names, weights=weights)
+
+
+def create_img2img_from_pipe(t2i_pipe):
+    """
+    Create an Image2Image pipeline that shares weights with an existing Text2Image pipeline,
+    avoiding double-loading into VRAM.
+    """
+    try:
+        from diffusers import AutoPipelineForImage2Image
+    except Exception as e:
+        raise RuntimeError(
+            "Refine (img2img) requires diffusers AutoPipelineForImage2Image. "
+            "Please upgrade diffusers in your environment.\n\n"
+            f"Original error: {e}"
+        )
+
+    try:
+        return AutoPipelineForImage2Image.from_pipe(t2i_pipe)
+    except Exception as e:
+        raise RuntimeError(
+            "Failed to create img2img pipeline from the loaded FLUX pipeline. "
+            "Your diffusers version may not support img2img for this model.\n\n"
+            f"Original error: {e}"
         )

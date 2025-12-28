@@ -1,7 +1,7 @@
 """Tests for configuration and runtime setup."""
 
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 from flux_gen.config import GenerationConfig, RuntimeConfig
 
@@ -101,14 +101,22 @@ def test_runtime_config_from_env_no_token():
 def test_runtime_config_detect_cuda():
     """Test CUDA detection."""
     # Test with torch available
-    with patch.dict('sys.modules', {'torch': pytest.MagicMock()}):
-        with patch('torch.cuda.is_available', return_value=True):
-            assert RuntimeConfig._detect_cuda() is True
+    mock_torch = MagicMock()
+    mock_torch.cuda.is_available.return_value = True
+    with patch.dict('sys.modules', {'torch': mock_torch}):
+        assert RuntimeConfig._detect_cuda() is True
 
-        with patch('torch.cuda.is_available', return_value=False):
-            assert RuntimeConfig._detect_cuda() is False
+    mock_torch.cuda.is_available.return_value = False
+    with patch.dict('sys.modules', {'torch': mock_torch}):
+        assert RuntimeConfig._detect_cuda() is False
 
     # Test with torch not available
-    with patch.dict('sys.modules', {}, clear=True):
-        with patch('builtins.__import__', side_effect=ImportError):
-            assert RuntimeConfig._detect_cuda() is False
+    real_import = __import__
+
+    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "torch":
+            raise ImportError
+        return real_import(name, globals, locals, fromlist, level)
+
+    with patch('builtins.__import__', side_effect=fake_import):
+        assert RuntimeConfig._detect_cuda() is False

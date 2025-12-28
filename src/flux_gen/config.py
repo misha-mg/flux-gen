@@ -42,6 +42,26 @@ class GenerationConfig:
     lora_scales: list[float] | None = None
     lora_trigger_words: list[str] | None = None
 
+    # LoRA application mode:
+    # - True (default): fuse LoRA into the model for speed, but you cannot change scale later per-stage.
+    # - False: keep LoRA as adapters, allowing per-stage scaling (recommended when using --refine).
+    lora_fuse: bool = True
+
+    # Optional second-pass refine (img2img) stage.
+    refine: bool = False
+    refine_strength: float = 0.28
+    refine_num_inference_steps: int | None = None  # default: reuse base steps unless set
+    refine_guidance_scale: float | None = None     # default: reuse base guidance unless set
+    refine_upscale: float = 1.0                    # 1.0 = no upscale; e.g. 1.5-2.0 for microdetail
+    refine_prompt: str | None = None               # default: reuse effective_prompt
+    refine_negative_prompt: str | None = None      # default: reuse negative_prompt
+    refine_ip_adapter_scale: float | None = None   # default: reuse ip_adapter_scale
+    refine_lora_scales: list[float] | None = None  # only used when lora_fuse=False and adapters are active
+
+    # Refine-only mode: run img2img on an existing image instead of generating a new base image.
+    # When set, base generation is skipped and output is saved next to this image with "_refine" suffix.
+    refine_input_image: str | None = None
+
     @property
     def output_path(self) -> Path:
         """Get the full path where the generated image will be saved."""
