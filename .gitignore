@@ -5,7 +5,5 @@ outputs/
 
 lora/
 
-# Reference images (keep only docs/placeholder tracked)
-reference_images/**/*.{png,jpg,jpeg,webp,gif}
-!reference_images/README.md
-!reference_images/.gitkeep
+# Reference images (keep only in this folder)
+reference_images/

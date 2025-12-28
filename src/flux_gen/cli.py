@@ -7,6 +7,30 @@ from pathlib import Path
 from .config import GenerationConfig, MODEL_ID
 
 
+def _read_text_file(path: str) -> str:
+    """Read a UTF-8 text file and return stripped content."""
+    p = Path(path).expanduser()
+    return p.read_text(encoding="utf-8").strip()
+
+
+def _maybe_read_at_file(value: str | None) -> str | None:
+    """
+    Support curl-like '@file.txt' syntax for --prompt/--negative_prompt.
+    If value starts with '@' and the referenced file exists, load its contents.
+    """
+    if not value or not isinstance(value, str):
+        return value
+    if value.startswith("@") and len(value) > 1:
+        candidate = value[1:]
+        try:
+            p = Path(candidate).expanduser()
+            if p.is_file():
+                return p.read_text(encoding="utf-8").strip()
+        except OSError:
+            return value
+    return value
+
+
 def parse_args():
     """Parse command line arguments and return GenerationConfig."""
     parser = argparse.ArgumentParser(description="Generate images using FLUX model on Runpod")
@@ -21,6 +45,12 @@ def parse_args():
         type=str,
         default="cinematic portrait photo, soft natural light, 85mm lens, shallow depth of field, ultra realistic",
         help="Text prompt for image generation"
+    )
+    parser.add_argument(
+        "--prompt_file",
+        type=str,
+        default=None,
+        help="Path to a text file containing the prompt (overrides --prompt)."
     )
     parser.add_argument(
         "--out_dir",
@@ -89,6 +119,12 @@ def parse_args():
         help="Negative prompt to discourage undesired content (optional)"
     )
     parser.add_argument(
+        "--negative_prompt_file",
+        type=str,
+        default=None,
+        help="Path to a text file containing the negative prompt (overrides --negative_prompt)."
+    )
+    parser.add_argument(
         "--lora_path",
         type=str,
         default=None,
@@ -143,6 +179,17 @@ def parse_args():
     )
 
     args = parser.parse_args()
+
+    # Load prompts from files if requested (or via '@file' syntax)
+    if args.prompt_file:
+        args.prompt = _read_text_file(args.prompt_file)
+    else:
+        args.prompt = _maybe_read_at_file(args.prompt)
+
+    if args.negative_prompt_file:
+        args.negative_prompt = _read_text_file(args.negative_prompt_file)
+    else:
+        args.negative_prompt = _maybe_read_at_file(args.negative_prompt)
 
     # Check PEFT availability if LoRA is requested
     if args.lora_path or args.lora_paths:
