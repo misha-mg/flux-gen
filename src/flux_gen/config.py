@@ -46,8 +46,39 @@ class GenerationConfig:
     def output_path(self) -> Path:
         """Get the full path where the generated image will be saved."""
         # Generate filename based on model ID (e.g., "flux_dev.png" for FLUX.1-dev)
+        # If a file with the base name already exists, append an incrementing
+        # index suffix like `_0001` to avoid overwriting previous outputs.
         model_name = self.model_id.split('/')[-1].lower().replace('.', '_').replace('-', '_')
-        return self.out_dir / f"{model_name}.png"
+        base = model_name
+        out_dir = self.out_dir
+        # Ensure directory exists
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        # Find existing PNG files that start with the base name
+        existing_files = list(out_dir.glob(f"{base}*.png"))
+        max_idx = 0
+        for p in existing_files:
+            stem = p.stem  # e.g., "flux_dev", "flux_dev_0001"
+            if stem == base:
+                idx = 0
+            else:
+                parts = stem.rsplit("_", 1)
+                if len(parts) == 2 and parts[0] == base and parts[1].isdigit():
+                    idx = int(parts[1])
+                else:
+                    # ignore unrelated filenames like "flux_dev_extra.png"
+                    continue
+            if idx > max_idx:
+                max_idx = idx
+
+        next_idx = max_idx + 1
+        # If no existing files at all, use the base filename without suffix.
+        if next_idx == 1 and not (out_dir / f"{base}.png").exists():
+            return out_dir / f"{base}.png"
+
+        # Otherwise use zero-padded 4-digit index suffix.
+        filename = f"{base}_{next_idx:04d}.png"
+        return out_dir / filename
 
     @property
     def effective_prompt(self) -> str:
